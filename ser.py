@@ -1,3 +1,4 @@
+from data_augmentation import *
 import pandas as pd
 import numpy as np
 
@@ -6,8 +7,6 @@ import sys
 
 # librosa is a Python library used to analyze and collect data from audio files.
 import librosa
-import librosa.display
-import librosa.feature
 
 # seaborn is a data visualization library based on matplotlib.
 import seaborn as sns
@@ -23,12 +22,8 @@ import simpleaudio as sa
 import sounddevice as sd
 
 # keras is a deep learning API that makes it easier to implement neural networks
-import keras
-from keras.callbacks import ReduceLROnPlateau
-from keras.callbacks import ModelCheckpoint
-from keras.models import Sequential
-from keras.layers import Dense, Conv1D, MaxPooling1D, Flatten, Dropout, BatchNormalization
-from keras.utils import to_categorical
+import tensorflow as tf
+from tensorflow.keras.layers import Dense, Conv1D, MaxPooling1D, Flatten, Dropout, BatchNormalization
 
 import warnings
 if not sys.warnoptions:
@@ -147,8 +142,8 @@ emotion_df_s = pd.DataFrame(file_emotion_s, columns=['Emotions'])
 path_df_s = pd.DataFrame(file_path_s, columns=['Path'])
 Savee_df = pd.concat([emotion_df_s, path_df_s], axis=1)
 
-# create an aggregate dataframe using the four previously established dataframes
-agg_df = pd.concat([Ravdess_df, Crema_df, Tess_df, Savee_df], axis=0)
+# create an aggregate dataframe using the four previously created dataframes
+agg_df = pd.concat([Ravdess_df, Crema_df, Tess_df, Savee_df])
 agg_df.to_csv("agg_df.csv", index=False)
 
 # plot the distribution of emotions
@@ -156,64 +151,44 @@ plt.title("Count of Emotions", size=16)
 sns.countplot(x='Emotions', data=agg_df, palette=['#3D25BE', '#BE252D'])
 plt.xlabel('Emotion', size=12)
 plt.ylabel('Count', size=12)
-sns.despine(top=True, right=True, bottom=False, left=False)
+sns.despine()
 plt.show()
 
-"""plotting the waveplots and spectrogram of the audio"""
 def create_waveplot(data, sr, emotion):
+    """plotting the waveplots and spectrogram of the audio"""
     plt.figure(figsize=(10, 6))
-    plt.title("Waveplot for audio with {} emotion".format(emotion), size=16)
+    plt.title(f'Waveplot for audio with {emotion} emotion', size=16)
     librosa.display.waveshow(data, sr=sr)
     plt.show()
 
-"""display spectrogram from data input"""
 def create_spectrogram(data, sr, emotion):
+    """display spectrogram from data input"""
     # stft function converts the data into short-time fourier transform
     X = librosa.stft(data)
     Xdb = librosa.amplitude_to_db(abs(X))
     plt.figure(figsize=(12, 6))
-    plt.title("Spectrogram for audio with {} emotion".format(emotion), size=16)
-    librosa.display.specshow(data=Xdb, sr=sr, x_axis='time', y_axis='hz')
+    plt.title(f'Spectrogram for audio with {emotion} emotion', size=16)
+    librosa.display.specshow(data=Xdb, sr=sr, x_axis='Time', y_axis='Hertz (hz)')
     plt.colorbar()
     plt.show()
 
-def generate_new_audio(data, sr):
+def play_audio(data, sr):
     sd.play(data, sr)
     sd.wait()
 
-""" Generate audio using path to audio file"""
-def generate_simple_audio(path):
+def play_simple_audio(path):
+    """ Generate audio using path to audio file"""
     wave_obj = sa.WaveObject.from_wave_file(path)
     play_obj = wave_obj.play()
     play_obj.wait_done()
 
-""" Generate wave plot, spectrogram, and play corresponding audio """
 def generate(emotion):
-    path = np.array(agg_df.Path[agg_df.Emotions == emotion])[1]
+    """ Generate wave plot, spectrogram, and play corresponding audio """
+    path = np.array(agg_df.Path[agg_df.Emotions == emotion])[1]  # same as 'path = np.array(agg_df.Path[agg_df['Emotions'] == emotion])[1]'
     data, sampling_rate = librosa.load(path)
     create_waveplot(data, sampling_rate, emotion)
     create_spectrogram(data, sampling_rate, emotion)
-    generate_simple_audio(path)
-
-"""
-Data augmentation: create new synthetic data samples by adding slight perturbations on existing training set
-augmentation techniques for audio include noise injection, pitch change, shifting time, and speed
-the goal is to make our learning model invariant to the perturbations and enhance its ability to generalize
-"""
-def noise(data):
-    noise_amp = 0.035 * np.random.uniform() * np.amax(data)
-    temp = data + noise_amp * np.random.normal(size=data.shape[0])
-    return temp
-
-def stretch(data, rate=0.8):
-    return librosa.effects.time_stretch(y=data, rate=rate)
-
-def shift(data):
-    shift_range = int(np.random.uniform(low=-5, high=5) * 1000)
-    return np.roll(data, shift_range)
-
-def pitch(data, sr, pitch_factor=0.7):
-    return librosa.effects.pitch_shift(y=data, sr=sr, n_steps=pitch_factor)
+    play_simple_audio(path)
 
 # taking any example and checking for techniques.
 path = np.array(agg_df.Path)[5]
@@ -222,27 +197,27 @@ data, sample_rate = librosa.load(path)
 
 # 1) Simple audio
 create_waveplot(data=data, sr=sample_rate, emotion=e)
-generate_simple_audio(path)
+play_audio(path)
 
 # 2) Noise injection
 noise_injected = noise(data)
 create_waveplot(data=noise_injected, sr=sample_rate, emotion=e)
-generate_new_audio(data=noise_injected, sr=sample_rate)
+play_audio(data=noise_injected, sr=sample_rate)
 
 # 3) Stretching
 stretched = stretch(data)
 create_waveplot(data=stretched, sr=sample_rate, emotion=e)
-generate_new_audio(data=stretched, sr=sample_rate)
+play_audio(data=stretched, sr=sample_rate)
 
 # 4) Shifting
 shifted = shift(data)
 create_waveplot(data=shifted, sr=sample_rate, emotion=e)
-generate_new_audio(data=shifted, sr=sample_rate)
+play_audio(data=shifted, sr=sample_rate)
 
 # 5) Pitch
 pitched = pitch(data=data, sr=sample_rate)
 create_waveplot(data=pitched, sr=sample_rate, emotion=e)
-generate_new_audio(data=pitched, sr=sample_rate)
+play_audio(data=pitched, sr=sample_rate)
 
 """
 Feature extraction: analyze the relations between different things
@@ -338,7 +313,7 @@ x_test = np.expand_dims(x_test, axis=2)
 # print(x_train.shape, y_train.shape, x_test.shape, y_test.shape)
 
 # Modeling
-model = Sequential()
+model = tf.keras.models.Sequential()
 model.add(Conv1D(256, kernel_size=5, strides=1, padding='same', activation='relu', input_shape=(x_train.shape[1], 1)))
 model.add(MaxPooling1D(pool_size=5, strides=2, padding='same'))
 
@@ -361,7 +336,7 @@ model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accur
 
 model.summary()
 
-rlrp = ReduceLROnPlateau(monitor='loss', factor=0.4, verbose=0, patience=2, min_lr=0.0000001)
+rlrp = tf.keras.callbacks.ReduceLROnPlateau(monitor='loss', factor=0.4, verbose=0, patience=2, min_lr=0.0000001)
 history = model.fit(x_train, y_train, batch_size=64, epochs=50, validation_data=(x_test, y_test), callbacks=[rlrp])
 
 print("Accuracy of our model on test data : ", model.evaluate(x_test, y_test)[1]*100, "%")
