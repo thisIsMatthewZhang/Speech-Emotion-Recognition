@@ -1,5 +1,6 @@
 from data_augmentation import *
 from feature_extraction import *
+from model import create_model
 import pandas as pd
 import numpy as np
 
@@ -254,36 +255,14 @@ x_train = np.expand_dims(x_train, axis=2)
 x_test = np.expand_dims(x_test, axis=2)
 # print(x_train.shape, y_train.shape, x_test.shape, y_test.shape)
 
-# Modeling
-model = tf.keras.models.Sequential()
-model.add(Conv1D(256, kernel_size=5, strides=1, padding='same', activation='relu', input_shape=(x_train.shape[1], 1)))
-model.add(MaxPooling1D(pool_size=5, strides=2, padding='same'))
-
-model.add(Conv1D(256, kernel_size=5, strides=1, padding='same', activation='relu'))
-model.add(MaxPooling1D(pool_size=5, strides=2, padding='same'))
-
-model.add(Conv1D(128, kernel_size=5, strides=1, padding='same', activation='relu'))
-model.add(MaxPooling1D(pool_size=5, strides=2, padding='same'))
-model.add(Dropout(0.2))
-
-model.add(Conv1D(64, kernel_size=5, strides=1, padding='same', activation='relu'))
-model.add(MaxPooling1D(pool_size=5, strides=2, padding='same'))
-
-model.add(Flatten())
-model.add(Dense(units=32, activation='relu'))
-model.add(Dropout(0.3))
-
-model.add(Dense(units=8, activation='softmax'))
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-
-model.summary()
+model = create_model(x_train)
 
 rlrp = tf.keras.callbacks.ReduceLROnPlateau(monitor='loss', factor=0.4, verbose=0, patience=2, min_lr=0.0000001)
 history = model.fit(x_train, y_train, batch_size=64, epochs=50, validation_data=(x_test, y_test), callbacks=[rlrp])
 
-print("Accuracy of our model on test data : ", model.evaluate(x_test, y_test)[1]*100, "%")
+print(f'Accuracy of our model on test data: {model.evaluate(x_test, y_test)[1] * 100}%')
 
-epochs = [i for i in range(50)]
+epochs = list(range(50))
 fig, ax = plt.subplots(1, 2)
 train_acc = history.history['accuracy']
 train_loss = history.history['loss']
@@ -316,7 +295,7 @@ df.head(10)
 
 cm = confusion_matrix(y_test, y_pred)
 plt.figure(figsize=(12, 10))
-cm = pd.DataFrame(cm, index = [i for i in encoder.categories_], columns=[i for i in encoder.categories_])
+cm = pd.DataFrame(cm, index=[i for i in encoder.categories_], columns=[i for i in encoder.categories_])
 sns.heatmap(cm, linecolor='white', cmap='Blues', linewidths=1, annot=True, fmt='')
 plt.title('Confusion Matrix', size=20)
 plt.xlabel('Predicted Labels', size=14)
