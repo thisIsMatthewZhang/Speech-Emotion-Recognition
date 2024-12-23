@@ -36,14 +36,14 @@ def create_model(training_shape):
 
     model.add(Conv1D(128, kernel_size=5, strides=1, padding='same', activation='relu'))
     model.add(MaxPooling1D(pool_size=5, strides=2, padding='same'))
-    model.add(Dropout(0.2))
+    model.add(Dropout(0.3))
 
     model.add(Conv1D(64, kernel_size=5, strides=1, padding='same', activation='relu'))
     model.add(MaxPooling1D(pool_size=5, strides=2, padding='same'))
 
     model.add(Flatten())
     model.add(Dense(units=32, activation='relu'))
-    model.add(Dropout(0.3))
+    model.add(Dropout(0.4))
 
     model.add(Dense(units=8, activation='softmax'))
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])

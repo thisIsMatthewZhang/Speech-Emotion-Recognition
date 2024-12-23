@@ -258,11 +258,11 @@ x_test = np.expand_dims(x_test, axis=2)
 model = create_model(x_train)
 
 rlrp = tf.keras.callbacks.ReduceLROnPlateau(monitor='loss', factor=0.4, verbose=0, patience=2, min_lr=0.0000001)
-history = model.fit(x_train, y_train, batch_size=64, epochs=50, validation_data=(x_test, y_test), callbacks=[rlrp])
+history = model.fit(x_train, y_train, batch_size=64, epochs=60, validation_data=(x_test, y_test), callbacks=[rlrp])
 
 print(f'Accuracy of our model on test data: {model.evaluate(x_test, y_test)[1] * 100}%')
 
-epochs = list(range(50))
+epochs = list(range(60))
 fig, ax = plt.subplots(1, 2)
 train_acc = history.history['accuracy']
 train_loss = history.history['loss']

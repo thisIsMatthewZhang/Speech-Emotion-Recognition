@@ -25,6 +25,7 @@ Features:
     - focuses on harmonic structure rather than the full spectrum of frequencies.
 13) Root Mean Square Value : measure of energy or loudness of an audio signal
     - provides a scalar value representing the signal's average amplitude over time
+and more...
     
 """
 
@@ -47,6 +48,12 @@ def extract_features(data, sample_rate):
     # MelSpectrogram
     mel = np.mean(librosa.feature.melspectrogram(y=data, sr=sample_rate).T, axis=0)
     result = np.hstack((result, mel))
+    # spectral rolloff
+    spec_rolloff = np.mean(librosa.feature.spectral_rolloff(y=data, sr=sample_rate).T, axis=0)
+    result = np.hstack((result, spec_rolloff))
+    # tonal centroid
+    tonal_cent = np.mean(librosa.feature.tonnetz(y=data, sr=sample_rate).T, axis=0)
+    result = np.hstack((result, tonal_cent))
     return result
 
 def get_features(path):
